@@ -1,0 +1,40 @@
+#!/bin/sh
+set -e
+
+cd /opt/jentrata/
+. certs/.keystore
+
+CERT_PATH="/opt/jentrata/certs"
+CERT_NAME="${COMPANYNAME}-${CERT_ENV}"
+
+unzip -o certs/${COMPANYNAME}-B2B-Certs-${CERT_ENV}-${YEAR}.zip -d certs/
+
+cp certs/${CERT_NAME}.jks certs/${CERT_NAME}-ssl.jks
+keytool -delete -storepass "$KEY_PASS" -alias "${CERT_NAME}-sig" -keystore certs/${CERT_NAME}-ssl.jks
+
+cp certs/${CERT_NAME}.jks certs/${CERT_NAME}-sig.jks
+keytool -delete -storepass "$KEY_PASS" -alias "${CERT_NAME}-ssl" -keystore certs/${CERT_NAME}-sig.jks
+
+keytool -importkeystore \
+  -srckeystore certs/$CERT_NAME-ssl.jks \
+  -destkeystore "certs/$CERT_NAME-ssl.p12" \
+  -deststoretype PKCS12 \
+  -srcstorepass ${KEY_PASS} \
+  -deststorepass ${KEY_PASS} \
+  -destkeypass ${KEY_PASS} \
+  -noprompt
+openssl pkcs7 -outform PEM -in certs/$CERT_NAME-SSL.p7b -print_certs > certs/$CERT_NAME-ssl.pem
+openssl pkcs12 -password pass:${KEY_PASS} -in certs/$CERT_NAME-ssl.p12 -nodes -nocerts -out certs/$CERT_NAME-ssl.key
+openssl pkcs12 -export -password pass:${KEY_PASS} -inkey "certs/$CERT_NAME-ssl.key" -in "certs/$CERT_NAME-ssl.pem" -name "$CERT_NAME-ssl" -out "certs/$CERT_NAME-ssl.p12"
+
+keytool -importkeystore \
+  -srckeystore certs/$CERT_NAME-sig.jks \
+  -destkeystore "certs/$CERT_NAME-sig.p12" \
+  -deststoretype PKCS12 \
+  -srcstorepass ${KEY_PASS} \
+  -deststorepass ${KEY_PASS} \
+  -destkeypass ${KEY_PASS} \
+  -noprompt
+openssl pkcs7 -outform PEM -in certs/$CERT_NAME-SIG.p7b -print_certs > certs/$CERT_NAME-sig.pem
+openssl pkcs12 -password pass:${KEY_PASS} -in certs/$CERT_NAME-sig.p12 -nodes -nocerts -out certs/$CERT_NAME-sig.key
+openssl pkcs12 -export -password pass:${KEY_PASS} -inkey "certs/$CERT_NAME-sig.key" -in "certs/$CERT_NAME-sig.pem" -name "$CERT_NAME-sig" -out "certs/$CERT_NAME-sig.p12"
