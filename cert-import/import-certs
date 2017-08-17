@@ -7,7 +7,12 @@ cd /opt/jentrata/
 CERT_PATH="/opt/jentrata/certs"
 CERT_NAME="${COMPANYNAME}-${CERT_ENV}"
 
+mkdir -p $CERT_PATH/CA
 unzip -o certs/${COMPANYNAME}-B2B-Certs-${CERT_ENV}-${YEAR}.zip -d certs/
+unzip -o certs/NBNCo-B2B-PublicKeyCertificates-${CERT_ENV}.zip -d certs/CA
+
+rm -f certs/${COMPANYNAME}-B2B-Certs-${CERT_ENV}-${YEAR}.zip
+rm -f certs/NBNCo-B2B-PublicKeyCertificates-${CERT_ENV}.zip
 
 cp certs/${CERT_NAME}.jks certs/${CERT_NAME}-ssl.jks
 keytool -delete -storepass "$KEY_PASS" -alias "${CERT_NAME}-sig" -keystore certs/${CERT_NAME}-ssl.jks
@@ -38,3 +43,20 @@ keytool -importkeystore \
 openssl pkcs7 -outform PEM -in certs/$CERT_NAME-SIG.p7b -print_certs > certs/$CERT_NAME-sig.pem
 openssl pkcs12 -password pass:${KEY_PASS} -in certs/$CERT_NAME-sig.p12 -nodes -nocerts -out certs/$CERT_NAME-sig.key
 openssl pkcs12 -export -password pass:${KEY_PASS} -inkey "certs/$CERT_NAME-sig.key" -in "certs/$CERT_NAME-sig.pem" -name "$CERT_NAME-sig" -out "certs/$CERT_NAME-sig.p12"
+
+for file in certs/CA/*.cer; do
+    [ -f "$file" ] || break
+    alias="${file##*/}"
+    keytool -import -noprompt -trustcacerts -storepass $KEY_PASS -alias $alias -file $file -keystore /opt/jentrata/certs/truststore.jks
+done
+
+mkdir /tmp/certs
+cd $CERT_PATH
+mv * /tmp/certs
+mkdir -p $CERT_PATH/misc
+mv /tmp/certs/* $CERT_PATH/misc
+ln -s misc/$CERT_NAME-ssl.p12 jentrata-ssl.p12
+ln -s misc/$CERT_NAME-ssl.key jentrata-ssl.key
+ln -s misc/$CERT_NAME-ssl.pem jentrata-ssl.pem
+ln -s misc/$CERT_NAME-sig.p12 jentrata-sig.p12
+ln -s misc/truststore.jks truststore.jks
