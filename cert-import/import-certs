@@ -8,8 +8,8 @@ CERT_PATH="/opt/jentrata/certs"
 CERT_NAME="${COMPANYNAME}-${CERT_ENV}"
 
 mkdir -p $CERT_PATH/CA
-unzip -o certs/${COMPANYNAME}-B2B-Certs-${CERT_ENV}-${YEAR}.zip -d certs/
-unzip -o certs/NBNCo-B2B-PublicKeyCertificates-${CERT_ENV}.zip -d certs/CA
+unzip -j -o certs/${COMPANYNAME}-B2B-Certs-${CERT_ENV}-${YEAR}.zip -d certs/
+unzip -j -o certs/NBNCo-B2B-PublicKeyCertificates-${CERT_ENV}.zip -d certs/CA
 
 rm -f certs/${COMPANYNAME}-B2B-Certs-${CERT_ENV}-${YEAR}.zip
 rm -f certs/NBNCo-B2B-PublicKeyCertificates-${CERT_ENV}.zip
